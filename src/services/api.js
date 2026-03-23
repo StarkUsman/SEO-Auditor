@@ -7,6 +7,49 @@ const api = axios.create({
   timeout: 21600000, // 6 hours for large crawls
 });
 
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle 401 errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - clear storage
+      localStorage.removeItem('token');
+      // Reload to show login screen
+      window.location.reload();
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API functions
+export const login = async (email, password) => {
+  const response = await api.post('/auth/login', { email, password });
+  return response.data;
+};
+
+export const register = async (email, password, name) => {
+  const response = await api.post('/auth/register', { email, password, name });
+  return response.data;
+};
+
+export const getMe = async () => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
+
+// Existing API functions
 export const runAudit = async (url, useJavaScript = true) => {
   const response = await api.post('/audit', { url, useJavaScript });
   return response.data;

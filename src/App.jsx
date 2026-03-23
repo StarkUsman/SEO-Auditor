@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Login from './components/Login.jsx';
 import AuditForm from './components/AuditForm.jsx';
 import AuditResults from './components/AuditResults.jsx';
 import CrawlResults from './components/CrawlResults.jsx';
@@ -8,14 +10,15 @@ import WebsiteOptimizer from './components/WebsiteOptimizer.jsx';
 import { runAudit, runCrawl } from './services/api';
 import './App.css';
 
-function App() {
-  const [activePage, setActivePage] = useState('audit'); // 'audit' | 'content' | 'website'
+function AppContent() {
+  const { user, loading: authLoading, logout, isAuthenticated } = useAuth();
+  const [activePage, setActivePage] = useState('audit');
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [auditData, setAuditData] = useState(null);
   const [crawlData, setCrawlData] = useState(null);
   const [error, setError] = useState(null);
-  const [mode, setMode] = useState('audit'); // 'audit' or 'crawl'
+  const [mode, setMode] = useState('audit');
 
   const handleAudit = async (url, options) => {
     setLoading(true);
@@ -55,6 +58,21 @@ function App() {
     setActivePage(page);
     handleReset();
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="auth-loading">
+        <div className="auth-loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <div className="app">
@@ -105,7 +123,19 @@ function App() {
               Website Optimizer
             </button>
           </nav>
-          <span className="badge">AI Powered</span>
+          <div className="header-right">
+            <span className="badge">AI Powered</span>
+            <div className="user-menu">
+              <span className="user-name">{user?.name}</span>
+              <button className="logout-btn" onClick={logout} title="Sign out">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -156,6 +186,14 @@ function App() {
         <p>AI SEO Audit Tool &mdash; Powered by Claude &amp; Gemini</p>
       </footer>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
